@@ -21,6 +21,9 @@ database.db*
 logs
 *.log
 
+# Scratch directory
+scratch/
+
 # OS / Editor generated files
 .DS_Store
 Thumbs.db

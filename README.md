@@ -1,85 +1,123 @@
-# 🤖 AzeSpace - Server Bot for Friends
+# ⚡ AzeSpace - Discord User-Installed App
 
-A modern, highly polished, and extremely fun Discord bot built with **Discord.js v14** for your server with friends. Completely clean of any UwU/OwO elements, featuring fully-fledged economy games, social commands, utility tools, and AI chat integration!
+A modern **Discord User-Installed App** built with **Discord.js v14**, **Express**, and **discord-interactions**.
 
-## 🚀 Key Features
-
-*   **💰 Complete Economy System:** Cash checks (`!cash`), daily rewards (`!daily` with cooldowns), and peer-to-peer transfers (`!pay`).
-*   **🎰 Interactive Casino Games:** Risk your cash on Coinflip (`!coinflip`), Dice battles (`!dice`), or a gorgeous emoji Slot Machine (`!slots`).
-*   **🎉 Social & Fun Commands:** Measure server matchmaking with the Love Ship calculator (`!ship`), slap friends with funny physical descriptions (`!slap`), send warm hugs (`!hug`), and enjoy built-in jokes (`!joke`).
-*   **🧠 AI Chat Integration:** Chat with Llama3 AI (`!ask`) powered by Groq API (when configured).
-*   **🛠️ Utility and Moderation:** Quick latency checks (`!ping`), high-resolution avatar viewing (`!avatar`), server/user stats (`!server`, `!userinfo`), reaction polls (`!poll`), and automated message clearing (`!clear`).
-*   **🌐 Server Owner GlobalInfo:** `/globalinfo @user` shows account details, recorded ban/unban history from servers this bot is in, and mutual servers. Only the Discord server owner (`guild.ownerId`) can use it.
+Unlike traditional bots that require server invites and gateway connections, **User-Installed Apps** (`integration_types: [1]`) are installed directly to your personal Discord account. Once installed, your commands work **everywhere you go**:
+* 🌐 **Any Discord Server** you belong to (even without bot permissions)
+* 💬 **Direct Messages (Bot DMs)**
+* 👥 **Private Group DMs**
 
 ---
 
-## 🛠️ Setup Instructions
+## 🚀 Key Features
 
-### 1. Create the Bot on Discord
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and create a **New Application**.
-2. Go to the **Bot** tab, click **Reset Token**, and copy the token to your clipboard.
-3. Scroll down to **Privileged Gateway Intents** and enable:
-   * **Presence Intent**
-   * **Server Members Intent**
-   * **Message Content Intent** (Required for Prefix commands to function)
-4. Go to **OAuth2 -> URL Generator**:
-   * Scopes: `bot`, `applications.commands`
-   * Bot Permissions: `Administrator` (or select permissions manually: *Manage Messages*, *Send Messages*, *Embed Links*, *Read Message History*, *View Audit Log*).
-5. Copy the generated URL and open it in your browser to invite the bot to your server.
-
-### 2. Install & Configuration
-Rename `.env.example` to `.env` (or create it) and fill in your keys:
-```env
-DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
-GROQ_API_KEY=YOUR_GROQ_API_KEY_OPTIONAL
-```
-
-To run the bot locally:
-```bash
-npm install
-npm start
-```
+* ⚡ **Serverless / Webhook Architecture:** Zero gateway websocket connections. Powered by an Express HTTP server receiving signed interaction webhooks.
+* 🛡️ **Cryptographic Verification:** Every request is authenticated using Ed25519 signature checks via `discord-interactions` and your Discord `PUBLIC_KEY`.
+* ⏳ **Anti-Abuse Rate Limiting:** Built-in in-memory rate limiter (1 command per 3 seconds per user).
+* 🎯 **Strict Single-Response Execution:** Every command produces exactly one clean reply (no spam loops, no repeat buttons, no multi-message bursts).
+* 🎭 **Massive Arsenal of Commands:** Includes utility, fun, and troll commands!
 
 ---
 
 ## 🎮 Command List
 
-The bot supports the `!` and `az` prefixes (e.g., `!help` or `az help`).
-
-| Command | Usage | Description |
+### 🛠️ Core Utility & Fun Commands
+| Command | Options | Description |
 |---|---|---|
-| **`!help`** | `!help` | Displays the bot's custom help menu and command categories. |
-| **`!cash` / `!bal`** | `!cash [@user]` | Checks your current cash balance or a friend's balance. |
-| **`!daily`** | `!daily` | Claims your daily **$500** cash reward (24-hour cooldown). |
-| **`!pay`** | `!pay @user <amount>` | Safely transfer cash to one of your friends on the server. |
-| **`!coinflip`** | `!coinflip <amount \| all>` | Gamble cash on a 50/50 heads-or-tails coinflip. |
-| **`!dice`** | `!dice <amount \| all>` | Roll a 6-sided die against the bot. Highest roll wins the pot! |
-| **`!slots`** | `!slots <amount \| all>` | Play a realistic slot machine with multipliers (Diamonds pay 10x!). |
-| **`!ship`** | `!ship @user` | Measures love/friendship compatibility with a visual bar and funny results. |
-| **`!slap`** | `!slap @user` | Slaps a server member with a randomly selected funny flavor text. |
-| **`!hug`** | `!hug @user` | Wrap your friend in a warm, cozy virtual hug. |
-| **`!joke`** | `!joke` | Tells a clean, random dad joke to make your server smile. |
-| **`!ask`** | `!ask <question>` | Talk directly to Llama3 AI via Groq. |
-| **`!ping`** | `!ping` | Returns current websocket and API latency. |
-| **`!avatar`** | `!avatar [@user]` | View a user's high-resolution avatar image. |
-| **`!server`** | `!server` | Display server metrics, channels, member count, and creation date. |
-| **`!userinfo`** | `!userinfo [@user]` | Shows full user profile stats, join dates, and roles. |
-| **`!poll`** | `!poll <question> \| <opt1> \| <opt2>`| Generates a highly stylized reaction-based poll. Supports up to 9 options. |
-| **`!clear`** | `!clear <number>` | Bulk deletes recent messages in a channel (Staff only). |
-| **`/globalinfo`** | `/globalinfo @user` | Server owner only. Shows account info, recorded ban history from servers this bot is in, and mutual servers. |
+| **`/8ball`** | `[question]` | Ask the magical 8-Ball any question. |
+| **`/roll`** | `[dice]` | Roll custom dice (e.g. `20`, `2d6`, `d100`). Defaults to 6. |
+| **`/quote`** | *None* | Get an inspiring or witty quote from public APIs. |
+| **`/fact`** | *None* | Learn a random fun or useless fact. |
+| **`/translate`** | `[text]` `[language]` | Quick language translation (e.g. Spanish, French, az, tr, de). |
+| **`/remindme`** | `[time]` `[note]` | DMs you a one-time reminder when the timer expires (e.g. `10m`, `2h`). |
+| **`/poll`** | `[question]` `[options]` | Creates a numbered reaction poll with up to 10 choices. |
+| **`/avatar`** | `[user]` | View high-res avatar (**Server context only**; blocked in DMs). |
+
+### 🤪 Troll & Entertainment Commands
+| Command | Options | Description |
+|---|---|---|
+| **`/spam`** | `[target]` | The ultimate troll: simulates a frantic spam cannon and drops a literal can of SPAM 🥫. |
+| **`/mock`** | `[text]` | Converts text into sPoNgEbOb MoCkInG cAsE 🐔. |
+| **`/fakeban`** | `[user]` `[reason]` | Scares a friend with a dramatic moderation ban embed (revealed as a prank!). |
+| **`/reverse`** | `[text]` | Reverses text backwards (!txet desreveR). |
+| **`/rate`** | `[target]` | Rates anything from 0 to 100% with funny commentary. |
+| **`/iq`** | `[user]` | Measures "100% scientifically accurate" galaxy brain IQ. |
+| **`/ship`** | `[user1]` `[user2]` | Love and friendship compatibility meter with visual progress bar. |
+| **`/roast`** | `[user]` | Friendly, lighthearted roasts to tease your friends. |
+| **`/copypasta`** | *None* | Posts a classic harmless internet copypasta. |
+| **`/coinflip`** | *None* | Flips a coin (with a 1% chance to land on its edge!). |
+| **`/rps`** | `[choice]` | Play Rock, Paper, Scissors against the app. |
 
 ---
 
-## 🌐 /globalinfo (Server Owner)
+## 🛠️ Setup & Installation Guide
 
-This slash command is restricted with `interaction.user.id === interaction.guild.ownerId`. Administrator permission, Manage Server, a role named Owner, and the bot's configured owner ID are **not** enough.
-
-Ban history only includes events this bot has actually seen (ban/unban) in servers where it is installed. Discord does not provide a global ban database. Records are stored in local SQLite (`database.db`).
+### 1. Discord Developer Portal Setup
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and select your application.
+2. In **General Information**:
+   * Copy the **APPLICATION ID** (this is your `CLIENT_ID`).
+   * Copy the **PUBLIC KEY** (this is your `PUBLIC_KEY`).
+3. In **Bot**:
+   * Copy your bot token (this is your `DISCORD_TOKEN`, used by `deploy-commands.js` to register commands).
+4. In **Installation**:
+   * Under **Installation Contexts**, make sure **User Install** is checked!
+   * Under **Default Install Settings**, select:
+     * Scopes: `applications.commands`
 
 ---
 
-## 👑 Owner Administration
+### 2. Configure Environment Variables
+Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+```
+Fill in your `.env` credentials:
+```env
+DISCORD_TOKEN=your_bot_token_here
+CLIENT_ID=your_application_client_id_here
+PUBLIC_KEY=your_application_public_key_here
+PORT=3000
+```
 
-If your user ID matches the owner configured in `index.js`, you gain access to:
-*   `!givemoney @user <amount>`: Instantly add cash to a member's wallet.
-*   `!removemoney @user <amount>`: Deduct cash from a member's wallet.
+---
+
+### 3. Deploy Global Slash Commands
+Register the commands with `integration_types: [1]` and `contexts: [0, 1, 2]`:
+```bash
+npm run deploy
+```
+*Note: Global commands appear instantly on Discord for user-installed apps.*
+
+---
+
+### 4. Start the Webhook Server & Expose HTTPS
+Start the Express server:
+```bash
+npm start
+```
+Discord requires an **HTTPS** URL for the interactions endpoint.
+If developing locally, expose port 3000 using Cloudflare Tunnel or ngrok:
+```bash
+ngrok http 3000
+# or
+cloudflared tunnel --url http://localhost:3000
+```
+
+---
+
+### 5. Set Interactions Endpoint URL in Discord
+1. In Discord Developer Portal -> **General Information**.
+2. Set **Interactions Endpoint URL** to:
+   ```
+   https://<your-domain>/interactions
+   ```
+3. Click **Save Changes**. Discord will send a `PING` payload, which AzeSpace automatically validates and answers with `PONG`.
+
+---
+
+### 6. Install to Your Profile ("Add to My Apps")
+Use the User-Install authorization link:
+```
+https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=applications.commands&integration_type=1
+```
+Click **Add to My Apps**. Now, type `/` in any server, DM, or group chat to use your commands!
