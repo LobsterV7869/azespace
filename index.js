@@ -37,7 +37,9 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
+const { getGuildConfig } = require('./utils/config');
 const {
     verifyKeyMiddleware,
     InteractionType,
@@ -52,11 +54,12 @@ const publicKey = process.env.PUBLIC_KEY ? process.env.PUBLIC_KEY.trim() : null;
 // ==============================================================================
 // 1. INITIALIZATION CHECKS
 // ==============================================================================
-if (!publicKey || publicKey === 'your_application_public_key_here') {
+const hasValidPublicKey = publicKey && publicKey !== 'your_application_public_key_here';
+
+if (!hasValidPublicKey) {
     console.error('❌ CRITICAL ERROR: PUBLIC_KEY is missing in your .env file!');
     console.error('👉 Find your Public Key in Discord Developer Portal -> AzeSpace -> General Information -> PUBLIC KEY');
     console.error('👉 Add it to your .env file: PUBLIC_KEY=your_key_here');
-    process.exit(1);
 }
 
 // ==============================================================================
@@ -169,9 +172,29 @@ app.post('/interactions', verifyKeyMiddleware(publicKey), async (req, res) => {
         }
 
         try {
-            // Execute the command and return the single synchronous response
+            // Make the live shared config available to every command invocation.
+            const guildId = interaction.guild_id;
+            interaction.guildConfig = getGuildConfig(guildId);
             const response = await command.execute(interaction);
-            return res.json(response);
+            const followUpMessages = response.followUpMessages;
+            delete response.followUpMessages;
+            res.json(response);
+
+            const applicationId = interaction.application_id || process.env.CLIENT_ID;
+            if (Array.isArray(followUpMessages) && followUpMessages.length > 0 && applicationId) {
+                for (const content of followUpMessages) {
+                    const followUp = await fetch(`https://discord.com/api/v10/webhooks/${applicationId}/${interaction.token}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content }),
+                    });
+                    if (!followUp.ok) {
+                        console.error('Discord rejected interaction follow-up:', followUp.status, await followUp.text());
+                        break;
+                    }
+                }
+            }
+            return;
         } catch (error) {
             console.error(`❌ Error executing /${name}:`, error);
             return res.json({
@@ -181,6 +204,7 @@ app.post('/interactions', verifyKeyMiddleware(publicKey), async (req, res) => {
                     flags: InteractionResponseFlags.EPHEMERAL
                 }
             });
+
         }
     }
 
@@ -188,14 +212,73 @@ app.post('/interactions', verifyKeyMiddleware(publicKey), async (req, res) => {
     return res.status(400).json({ error: 'Unknown interaction type' });
 });
 
+app.use(express.json());
+
+function tokensMatch(left, right) {
+    if (!left || !right) return false;
+    const leftBuffer = Buffer.from(left);
+    const rightBuffer = Buffer.from(right);
+    return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+app.post('/api/guilds/:guildId/messages', async (req, res) => {
+    const authorization = req.get('Authorization') || '';
+    if (!authorization.startsWith('Bearer ') ||
+        !tokensMatch(authorization.slice(7), process.env.BOT_API_TOKEN)) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { channelId, type, content, title, description, color, fields, mentionEveryone } = req.body;
+    if (!channelId || !['embed', 'announce'].includes(type)) {
+        return res.status(400).json({ error: 'Invalid message request' });
+    }
+
+    const payload = {
+        content: type === 'announce' ? String(content || '').slice(0, 2000) : undefined,
+        embeds: type === 'embed' ? [{
+            title: String(title || '').slice(0, 256),
+            description: String(description || '').slice(0, 4096),
+            color: Number.isInteger(color) ? color : 0x5865F2,
+            fields: Array.isArray(fields) ? fields.slice(0, 25).map((field) => ({
+                name: String(field.name || '').slice(0, 256),
+                value: String(field.value || '').slice(0, 1024),
+                inline: Boolean(field.inline),
+            })) : [],
+        }] : undefined,
+        allowed_mentions: mentionEveryone ? { parse: ['everyone'] } : { parse: [] },
+    };
+
+    try {
+        const discordResponse = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+        if (!discordResponse.ok) {
+            return res.status(discordResponse.status).json({ error: 'Discord rejected the message' });
+        }
+        return res.status(201).json({ ok: true, message: await discordResponse.json() });
+    } catch (error) {
+        console.error('Failed to send bot message:', error);
+        return res.status(502).json({ error: 'Discord request failed' });
+    }
+});
+
 // ==============================================================================
 // 5. SERVER STARTUP
 // ==============================================================================
-const server = app.listen(PORT, () => {
-    console.log(`\n🚀 AzeSpace User-Installed App running on http://localhost:${PORT}`);
-    console.log(`📡 Set your Discord Interactions Endpoint URL to: https://<your-domain>/interactions`);
-    console.log(`🛡️ Signature verification: ACTIVE (using PUBLIC_KEY)`);
-    console.log(`⚡ Loaded ${commands.size} slash commands with 3-second rate limiting.\n`);
-});
+let server = null;
+
+if (!process.env.VERCEL && hasValidPublicKey) {
+    server = app.listen(PORT, () => {
+        console.log(`\n🚀 AzeSpace User-Installed App running on http://localhost:${PORT}`);
+        console.log(`📡 Set your Discord Interactions Endpoint URL to: https://<your-domain>/interactions`);
+        console.log(`🛡️ Signature verification: ACTIVE (using PUBLIC_KEY)`);
+        console.log(`⚡ Loaded ${commands.size} slash commands with 3-second rate limiting.\n`);
+    });
+}
 
 module.exports = { app, server };

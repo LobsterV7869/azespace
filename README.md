@@ -36,7 +36,7 @@ Unlike traditional bots that require server invites and gateway connections, **U
 ### 🤪 Troll & Entertainment Commands
 | Command | Options | Description |
 |---|---|---|
-| **`/spam`** | `[target]` | The ultimate troll: simulates a frantic spam cannon and drops a literal can of SPAM 🥫. |
+| **`/spam`** | `[text]` `[count]` | Repeats plain text up to 100 times in one public response in the current DM or server channel. |
 | **`/mock`** | `[text]` | Converts text into sPoNgEbOb MoCkInG cAsE 🐔. |
 | **`/fakeban`** | `[user]` `[reason]` | Scares a friend with a dramatic moderation ban embed (revealed as a prank!). |
 | **`/reverse`** | `[text]` | Reverses text backwards (!txet desreveR). |

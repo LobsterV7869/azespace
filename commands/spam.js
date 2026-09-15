@@ -1,37 +1,33 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { getOption, getUser, publicReply } = require('../utils/interaction');
-
-const SPAM_CAN = `
-  .--------------------.
- /      HORMEL SPAM     \\
-|========================|
-|  [ SPICED HAM & PORK ] |
-|       ★ 100% ★         |
-|   EXTRA SALTY TROLL    |
-|========================|
- \\______________________/
-`;
+const { getOption, publicReply } = require('../utils/interaction');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('spam')
-        .setDescription('Execute the legendary ultra spam cannon! (Troll command)')
+        .setDescription('Repeat a short message visibly (max 100 repetitions)')
         .addStringOption(option =>
-            option.setName('target')
-                .setDescription('Who or what you want to spam')
+            option.setName('text')
+                .setDescription('Message to send')
+                .setRequired(true)
+        )
+        .addIntegerOption(option =>
+            option.setName('count')
+                .setDescription('How many times to repeat it (1-100)')
                 .setRequired(false)
+                .setMinValue(1)
+                .setMaxValue(100)
         ),
     async execute(interaction) {
-        const target = getOption(interaction, 'target') || 'this channel';
-        const user = getUser(interaction);
+        const text = String(getOption(interaction, 'text') || '').trim();
+        const count = Number(getOption(interaction, 'count') || 1);
 
-        return publicReply(null, [
-            {
-                title: '🚨 MAXIMUM SPAM PROTOCOL INITIATED 🚨',
-                description: `Targeting: **${target}**\n\`\`\`text\n${SPAM_CAN}\n\`\`\`\n🎉 **MISSION ACCOMPLISHED!**\nA fresh 12oz can of delicious luncheon meat has been deployed directly to your chat.\n*Remember kids: Eat your SPAM, don't spam the chat!* 🥫🍖`,
-                color: 0xed4245,
-                footer: { text: `Spam cannon triggered by ${user.username}` }
-            }
-        ]);
+        if (!text) {
+            return publicReply('Please provide a message to send.');
+        }
+
+        const safeCount = Math.min(Math.max(Number.isInteger(count) ? count : 1, 1), 100);
+        const response = publicReply(text.slice(0, 2000));
+        response.followUpMessages = Array.from({ length: safeCount - 1 }, () => text.slice(0, 2000));
+        return response;
     }
 };
